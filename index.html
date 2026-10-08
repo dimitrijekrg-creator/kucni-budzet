@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kućni budžet</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f1f4f9;color:#243047}
+header{background:#20385e;color:white;text-align:center;padding:25px 15px}
+header h1{margin:0 0 7px;font-size:28px}
+header p{margin:0;color:#dce5f5}
+main{max-width:1000px;margin:22px auto;padding:0 14px}
+.panel,.card{background:white;border-radius:13px;padding:18px;margin-bottom:16px;box-shadow:0 3px 14px #20385e0c}
+h2{font-size:19px;margin:0 0 15px}
+label{display:block;font-size:14px;font-weight:bold;margin:12px 0 6px}
+input,select,button{font:inherit}
+input,select{width:100%;padding:12px;border:1px solid #cbd4e1;border-radius:8px;background:white;color:#243047}
+button{border:0;border-radius:8px;padding:12px 15px;cursor:pointer;font-weight:bold}
+button:disabled{opacity:.6;cursor:wait}
+.primary{background:#2857a4;color:white;width:100%;margin-top:15px}
+.secondary{background:#e7edf6;color:#20385e}
+.danger{background:#fff0f0;color:#b42318;padding:8px 10px}
+.tabs{display:flex;gap:10px;margin-bottom:12px}
+.tabs button{flex:1;background:#e7edf6;color:#20385e}
+.tabs button.active{background:#2857a4;color:white}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.card{margin:0}
+.card small{display:block;color:#68748a;margin-bottom:8px}
+.money{font-size:22px;font-weight:bold;overflow-wrap:anywhere}
+.income{color:#16804a}
+.expense{color:#c0392b}
+.balance{color:#2857a4}
+.muted{color:#68748a;font-size:13px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.topline{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.topline h2{margin:0}
+.message{padding:11px;border-radius:8px;background:#fff5d8;color:#745100;margin:12px 0;overflow-wrap:anywhere}
+.hidden{display:none!important}
+.entry{border-top:1px solid #e8edf3;padding:13px 0;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.entry:first-child{border-top:0}
+.entry-desc{font-weight:bold;overflow-wrap:anywhere}
+.entry-date{font-size:13px;color:#68748a;margin-top:5px}
+.entry-right{text-align:right;min-width:110px}
+.entry-amount{font-weight:bold;margin-bottom:8px}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:10px 8px;text-align:right;border-bottom:1px solid #e8edf3;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:#68748a}
+tfoot{font-weight:bold}
+@media(max-width:600px){
+ .cards{grid-template-columns:1fr}
+ .grid2{grid-template-columns:1fr}
+ .entry{align-items:flex-start}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Kućni budžet</h1>
+  <p>Pregled porodičnih finansija</p>
+</header>
+
+<main>
+  <section id="loginPanel" class="panel">
+    <h2>Prijava</h2>
+    <p class="muted">Prijavi se zajedničkim nalogom za kućni budžet.</p>
+    <form id="loginForm">
+      <label for="email">E-mail adresa</label>
+      <input id="email" type="email" autocomplete="username" required>
+      <label for="password">Lozinka aplikacije</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+      <button class="primary" id="loginButton" type="submit">Prijavi se</button>
+    </form>
+    <div id="loginMessage" class="message hidden"></div>
+  </section>
+
+  <section id="appPanel" class="hidden">
+    <div class="panel topline">
+      <div>
+        <strong>Kućni budžet</strong>
+        <div id="signedInAs" class="muted"></div>
+      </div>
+      <button id="logout" class="secondary" type="button">Odjavi se</button>
+    </div>
+
+    <section class="panel">
+      <h2>Dodaj prihod ili rashod</h2>
+      <div class="tabs">
+        <button id="expenseTab" class="active" type="button">Rashod</button>
+        <button id="incomeTab" type="button">Prihod</button>
+      </div>
+      <form id="entryForm">
+        <label for="date">Datum</label>
+        <input id="date" type="date" required>
+        <label id="descriptionLabel" for="description">Na šta smo potrošili?</label>
+        <input id="description" type="text" maxlength="250" placeholder="Unesi opis" required>
+        <label for="amount">Iznos (RSD)</label>
+        <input id="amount" type="number" min="0.01" step="0.01" placeholder="Na primer 2500" required>
+        <button class="primary" id="saveButton" type="submit">Sačuvaj rashod</button>
+        <div id="entryMessage" class="message hidden"></div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>Dnevni pregled</h2>
+      <label for="dailyDate">Izaberi datum</label>
+      <input id="dailyDate" type="date">
+      <div class="cards" style="margin-top:12px">
+        <div class="card"><small>Prihodi</small><div id="dayIncome" class="money income">0,00 RSD</div></div>
+        <div class="card"><small>Rashodi</small><div id="dayExpense" class="money expense">0,00 RSD</div></div>
+        <div class="card"><small>Razlika</small><div id="dayBalance" class="money balance">0,00 RSD</div></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Mesečni pregled</h2>
+      <label for="filterMonth">Izaberi mesec</label>
+      <input id="filterMonth" type="month">
+      <div class="cards" style="margin-top:12px">
+        <div class="card"><small>Ukupni prihodi</small><div id="monthIncome" class="money income">0,00 RSD</div></div>
+        <div class="card"><small>Ukupni rashodi</small><div id="monthExpense" class="money expense">0,00 RSD</div></div>
+        <div class="card"><small>Preostalo</small><div id="monthBalance" class="money balance">0,00 RSD</div></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Godišnji pregled po mesecima</h2>
+      <label for="filterYear">Izaberi godinu</label>
+      <select id="filterYear"></select>
+      <div class="tablewrap" style="margin-top:12px">
+        <table>
+          <thead>
+            <tr><th>Mesec</th><th>Prihodi</th><th>Rashodi</th><th>Razlika</th></tr>
+          </thead>
+          <tbody id="yearRows"></tbody>
+          <tfoot id="yearTotals"></tfoot>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="topline">
+        <h2>Unosi za izabrani mesec</h2>
+        <span id="entryCount" class="muted"></span>
+      </div>
+      <div id="entriesList" style="margin-top:12px"></div>
+    </section>
+  </section>
+</main>
+
+<script>
+/* POVEZIVANJE SA SUPABASE BAZOM
+   Ovde ćemo uneti Project URL i Publishable key iz podaci.txt.
+   Nikada ne unosi lozinku baze niti sb_secret_ ključ.
+*/
+const SUPABASE_URL = "https://shtndpzwllvnugcdfsrt.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2UQQ1q5cwBztU-tdE6jdww_NF_yVclK";
+
+const $ = id => document.getElementById(id);
+
+const money = value => Number(value || 0).toLocaleString("sr-RS", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
+}) + " RSD";
+
+function today() {
+  const d = new Date();
+  return d.getFullYear() + "-" +
+    String(d.getMonth() + 1).padStart(2, "0") + "-" +
+    String(d.getDate()).padStart(2, "0");
+}
+
+const currentMonth = () => today().slice(0, 7);
+
+const monthNames = [
+  "Januar", "Februar", "Mart", "April",
+  "Maj", "Jun", "Jul", "Avgust",
+  "Septembar", "Oktobar", "Novembar", "Decembar"
+];
+
+let db = null;
+let currentUser = null;
+let entries = [];
+let currentType = "rashod";
+let busy = false;
+
+function showMessage(id, text) {
+  $(id).textContent = text;
+  $(id).classList.remove("hidden");
+}
+
+function clearMessage(id) {
+  $(id).textContent = "";
+  $(id).classList.add("hidden");
+}
+
+function setType(type) {
+  currentType = type;
+  $("expenseTab").classList.toggle("active", type === "rashod");
+  $("incomeTab").classList.toggle("active", type === "prihod");
+  $("descriptionLabel").textContent = type === "rashod"
+    ? "Na šta smo potrošili?"
+    : "Od čega je prihod?";
+  $("saveButton").textContent = type === "rashod"
+    ? "Sačuvaj rashod"
+    : "Sačuvaj prihod";
+  clearMessage("entryMessage");
+}
+
+function sum(list, type) {
+  return list
+    .filter(item => item.tip === type)
+    .reduce((total, item) => total + Number(item.iznos), 0);
+}
+
+function totals(list) {
+  const inc = sum(list, "prihod");
+  const exp = sum(list, "rashod");
+  return { inc, exp, balance: inc - exp };
+}
+
+function putTotals(prefix, list) {
+  const t = totals(list);
+  $(prefix + "Income").textContent = money(t.inc);
+  $(prefix + "Expense").textContent = money(t.exp);
+  $(prefix + "Balance").textContent = money(t.balance);
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, character => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[character]);
+}
+
+function render() {
+  const month = $("filterMonth").value || currentMonth();
+  const day = $("dailyDate").value || today();
+  const year = Number($("filterYear").value) || new Date().getFullYear();
+
+  putTotals("day", entries.filter(item => item.datum === day));
+  putTotals("month", entries.filter(item =>
+    item.datum && item.datum.slice(0, 7) === month
+  ));
+
+  let annualIncome = 0;
+  let annualExpense = 0;
+
+  $("yearRows").innerHTML = monthNames.map((name, index) => {
+    const key = year + "-" + String(index + 1).padStart(2, "0");
+    const t = totals(entries.filter(item =>
+      item.datum && item.datum.slice(0, 7) === key
+    ));
+
+    annualIncome += t.inc;
+    annualExpense += t.exp;
+
+    return `<tr>
+      <td>${name}</td>
+      <td class="income">${money(t.inc)}</td>
+      <td class="expense">${money(t.exp)}</td>
+      <td>${money(t.balance)}</td>
+    </tr>`;
+  }).join("");
+
+  $("yearTotals").innerHTML = `<tr>
+    <td>UKUPNO</td>
+    <td class="income">${money(annualIncome)}</td>
+    <td class="expense">${money(annualExpense)}</td>
+    <td>${money(annualIncome - annualExpense)}</td>
+  </tr>`;
+
+  const monthEntries = entries.filter(item =>
+    item.datum && item.datum.slice(0, 7) === month
+  );
+
+  $("entryCount").textContent = monthEntries.length + " stavki";
+
+  if (!monthEntries.length) {
+    $("entriesList").innerHTML =
+      '<p class="muted">Nema unosa za izabrani mesec.</p>';
+    return;
+  }
+
+  $("entriesList").innerHTML = monthEntries.map(item => `
+    <div class="entry">
+      <div>
+        <div class="entry-desc">${escapeHtml(item.opis)}</div>
+        <div class="entry-date">${escapeHtml(item.datum)} · ${
+          item.tip === "prihod" ? "Prihod" : "Rashod"
+        }</div>
+      </div>
+      <div class="entry-right">
+        <div class="entry-amount ${
+          item.tip === "prihod" ? "income" : "expense"
+        }">${item.tip === "prihod" ? "+" : "−"}${money(item.iznos)}</div>
+        <button class="danger" type="button" data-delete="${item.id}">Obriši</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+async function loadEntries() {
+  if (!db || !currentUser) return;
+
+  const { data, error } = await db
+    .from("transakcije")
+    .select("id,user_id,tip,datum,opis,iznos")
+    .order("datum", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(5000);
+
+  if (error) {
+    showMessage("entryMessage", "Učitavanje nije uspelo: " + error.message);
+    return;
+  }
+
+  entries = data || [];
+  render();
+}
+
+function showApp(user) {
+  currentUser = user;
+  $("loginPanel").classList.add("hidden");
+  $("appPanel").classList.remove("hidden");
+  $("signedInAs").textContent = user.email || "";
+  loadEntries();
+}
+
+function showLogin() {
+  currentUser = null;
+  entries = [];
+  $("appPanel").classList.add("hidden");
+  $("loginPanel").classList.remove("hidden");
+}
+
+$("loginForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  clearMessage("loginMessage");
+
+  if (!db) {
+    showMessage("loginMessage",
+      "Povezivanje nije podešeno. Proveri Project URL i Publishable key.");
+    return;
+  }
+
+  $("loginButton").disabled = true;
+  const { data, error } = await db.auth.signInWithPassword({
+    email: $("email").value.trim(),
+    password: $("password").value
+  });
+  $("loginButton").disabled = false;
+
+  if (error) {
+    showMessage("loginMessage", "Prijava nije uspela: " + error.message);
+    return;
+  }
+
+  $("password").value = "";
+  showApp(data.user);
+});
+
+$("logout").addEventListener("click", async () => {
+  if (!db) return;
+  const { error } = await db.auth.signOut();
+
+  if (error) {
+    alert("Odjava nije uspela: " + error.message);
+    return;
+  }
+
+  showLogin();
+});
+
+$("expenseTab").addEventListener("click", () => setType("rashod"));
+$("incomeTab").addEventListener("click", () => setType("prihod"));
+$("filterMonth").addEventListener("change", render);
+$("dailyDate").addEventListener("change", render);
+$("filterYear").addEventListener("change", render);
+
+$("entryForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  clearMessage("entryMessage");
+
+  if (busy || !db || !currentUser) return;
+
+  const datum = $("date").value;
+  const opis = $("description").value.trim();
+  const iznos = Number($("amount").value);
+
+  if (!datum || !opis || !Number.isFinite(iznos) || iznos <= 0) {
+    showMessage("entryMessage", "Proveri datum, opis i iznos.");
+    return;
+  }
+
+  busy = true;
+  $("saveButton").disabled = true;
+  $("saveButton").textContent = "Čuvam...";
+
+  const { error } = await db.from("transakcije").insert({
+    user_id: currentUser.id,
+    tip: currentType,
+    datum: datum,
+    opis: opis,
+    iznos: iznos
+  });
+
+  busy = false;
+  $("saveButton").disabled = false;
+  $("saveButton").textContent = currentType === "rashod"
+    ? "Sačuvaj rashod"
+    : "Sačuvaj prihod";
+
+  if (error) {
+    showMessage("entryMessage", "Čuvanje nije uspelo: " + error.message);
+    return;
+  }
+
+  $("description").value = "";
+  $("amount").value = "";
+  $("filterMonth").value = datum.slice(0, 7);
+  $("dailyDate").value = datum;
+  showMessage("entryMessage", "Unos je sačuvan u bazi.");
+  await loadEntries();
+});
+
+$("entriesList").addEventListener("click", async event => {
+  const button = event.target.closest("[data-delete]");
+  if (!button || !db || !currentUser) return;
+
+  if (!confirm("Da li sigurno želiš da obrišeš ovaj unos?")) return;
+
+  const { error } = await db
+    .from("transakcije")
+    .delete()
+    .eq("id", button.dataset.delete)
+    .eq("user_id", currentUser.id);
+
+  if (error) {
+    alert("Brisanje nije uspelo: " + error.message);
+    return;
+  }
+
+  await loadEntries();
+});
+
+function start() {
+  $("date").value = today();
+  $("dailyDate").value = today();
+  $("filterMonth").value = currentMonth();
+
+  const thisYear = new Date().getFullYear();
+
+  for (let year = thisYear - 5; year <= thisYear + 1; year++) {
+    const option = document.createElement("option");
+    option.value = year;
+    option.textContent = year;
+    if (year === thisYear) option.selected = true;
+    $("filterYear").appendChild(option);
+  }
+
+  if (
+    SUPABASE_URL.startsWith("https://") &&
+    !SUPABASE_URL.includes("OVDE_UNESI") &&
+    SUPABASE_PUBLISHABLE_KEY.startsWith("sb_publishable_") &&
+    window.supabase
+  ) {
+    db = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY
+    );
+
+    db.auth.getSession().then(({ data, error }) => {
+      if (error) {
+        showMessage("loginMessage", "Greška: " + error.message);
+        return;
+      }
+      if (data.session) showApp(data.session.user);
+    });
+
+    db.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") showLogin();
+    });
+  }
+}
+
+start();
+</script>
+</body>
+</html>
