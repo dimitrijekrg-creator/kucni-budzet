@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="sr">
 <head>
@@ -5,55 +6,127 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kućni budžet</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
+:root {
+  --bg:#f1f2f5; --surface:#fff; --surface-soft:#faf9f6;
+  --text:#252a35; --muted:#7b8190; --gold:#c5a052;
+  --gold-dark:#94702e; --gold-light:#f7efde; --border:#e5e6eb;
+  --blue:#356ba8; --blue-soft:#edf4fc; --red:#bd4e58;
+  --red-soft:#fbefef; --shadow:0 8px 26px rgba(31,38,52,.055);
+}
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial,sans-serif;background:#f1f4f9;color:#243047}
-header{background:#20385e;color:white;text-align:center;padding:25px 15px}
-header h1{margin:0 0 7px;font-size:28px}
-header p{margin:0;color:#dce5f5}
-main{max-width:1000px;margin:22px auto;padding:0 14px}
-.panel,.card{background:white;border-radius:13px;padding:18px;margin-bottom:16px;box-shadow:0 3px 14px #20385e0c}
-h2{font-size:19px;margin:0 0 15px}
-label{display:block;font-size:14px;font-weight:bold;margin:12px 0 6px}
-input,select,button{font:inherit}
-input,select{width:100%;padding:12px;border:1px solid #cbd4e1;border-radius:8px;background:white;color:#243047}
-button{border:0;border-radius:8px;padding:12px 15px;cursor:pointer;font-weight:bold}
+html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:"Segoe UI",Arial,sans-serif;font-size:15px;line-height:1.55}
+header{position:relative;overflow:hidden;padding:34px 24px 31px;color:#fff;background:#252a35;border-bottom:4px solid var(--gold)}
+header::before{content:"";position:absolute;width:240px;height:240px;right:8%;top:-160px;border:1px solid rgba(197,160,82,.35);border-radius:50%;box-shadow:0 0 0 24px rgba(197,160,82,.035),0 0 0 48px rgba(197,160,82,.025);pointer-events:none}
+header h1,header p{position:relative;max-width:1120px;margin-left:auto;margin-right:auto}
+header h1{margin-top:0;margin-bottom:0;font-size:clamp(26px,4vw,35px);font-weight:750;letter-spacing:-.8px}
+header p{margin-top:5px;margin-bottom:0;color:#d4d5da;font-size:14px;letter-spacing:.3px}
+main{width:min(1120px,calc(100% - 36px));margin:28px auto 48px}
+h2{margin:0 0 20px;font-size:19px;font-weight:750;letter-spacing:-.3px}
+h3{margin:0 0 12px;font-size:17px}
+p{margin-top:0}
+.panel{position:relative;margin-bottom:22px;padding:25px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow)}
+#loginPanel{max-width:480px;margin:36px auto;padding:30px;border-top:4px solid var(--gold)}
+#appPanel>section.panel{overflow:hidden}
+#appPanel>section.panel>h2{position:relative;padding-bottom:14px;border-bottom:1px solid var(--border)}
+#appPanel>section.panel>h2::after{content:"";position:absolute;left:0;bottom:-1px;width:58px;height:3px;background:var(--gold);border-radius:3px}
+.topline{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.topline strong{font-size:18px;letter-spacing:-.3px}
+#signedInAs{margin-top:3px;overflow-wrap:anywhere}
+.muted{color:var(--muted);font-size:13px}
+label{display:block;margin:13px 0 6px;color:#505766;font-size:13px;font-weight:650}
+input,select{display:block;width:100%;min-height:45px;padding:10px 12px;color:var(--text);background:#fff;border:1px solid #d9dce3;border-radius:9px;outline:none;font:inherit;transition:border-color .18s,box-shadow .18s}
+input:focus,select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(197,160,82,.15)}
+input::placeholder{color:#a0a5af}
+button{min-height:42px;padding:10px 17px;border:1px solid transparent;border-radius:9px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:transform .16s,background .16s,box-shadow .16s,border-color .16s}
 button:disabled{opacity:.6;cursor:wait}
-.primary{background:#2857a4;color:white;width:100%;margin-top:15px}
-.secondary{background:#e7edf6;color:#20385e}
-.danger{background:#fff0f0;color:#b42318;padding:8px 10px}
-.tabs{display:flex;gap:10px;margin-bottom:12px}
-.tabs button{flex:1;background:#e7edf6;color:#20385e}
-.tabs button.active{background:#2857a4;color:white}
-.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.card{margin:0}
-.card small{display:block;color:#68748a;margin-bottom:8px}
-.money{font-size:22px;font-weight:bold;overflow-wrap:anywhere}
-.income{color:#16804a}
-.expense{color:#c0392b}
-.balance{color:#2857a4}
-.muted{color:#68748a;font-size:13px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.topline{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-.topline h2{margin:0}
-.message{padding:11px;border-radius:8px;background:#fff5d8;color:#745100;margin:12px 0;overflow-wrap:anywhere}
+button:focus-visible{outline:3px solid rgba(197,160,82,.35);outline-offset:2px}
+button:active{transform:translateY(1px)}
+button.primary{color:#252a35;background:linear-gradient(135deg,#dfc27f,#bd9441);border-color:#bd9441;box-shadow:0 4px 10px rgba(148,112,46,.15)}
+button.primary:hover{background:linear-gradient(135deg,#e8ce91,#c5a052);box-shadow:0 6px 14px rgba(148,112,46,.22)}
+button.secondary{color:#454b57;background:#fff;border-color:#dfe1e7}
+button.secondary:hover{background:var(--surface-soft);border-color:var(--gold)}
+button.danger{min-height:34px;padding:6px 11px;color:var(--red);background:var(--red-soft);border:1px solid #f0d5d7;font-size:12px}
+button.danger:hover{background:#f6dfe1;border-color:var(--red)}
+button.edit{min-height:34px;padding:6px 11px;color:var(--gold-dark);background:var(--gold-light);border:1px solid #eadbb9;font-size:12px}
+button.edit:hover{background:#f0e3c7;border-color:var(--gold)}
+#entryForm button[type=submit],#loginPanel button.primary{width:100%;margin-top:19px}
+.tabs{display:flex;gap:6px;margin:0 0 20px;padding:5px;background:#f1f2f5;border:1px solid #e7e8ed;border-radius:11px}
+.tabs button{flex:1;min-height:43px;color:#626978;background:transparent;border-color:transparent}
+.tabs button.active{color:#282b32;background:#fff;border-color:#e7d7b1;box-shadow:0 2px 7px rgba(31,38,52,.07)}
+.message{margin:14px 0;padding:12px 14px;border:1px solid var(--border);border-left:4px solid var(--gold);border-radius:8px;background:var(--surface-soft);overflow-wrap:anywhere}
 .hidden{display:none!important}
-.entry{border-top:1px solid #e8edf3;padding:13px 0;display:flex;justify-content:space-between;align-items:center;gap:12px}
-.entry:first-child{border-top:0}
-.entry-desc{font-weight:bold;overflow-wrap:anywhere}
-.entry-date{font-size:13px;color:#68748a;margin-top:5px}
-.entry-right{text-align:right;min-width:110px}
-.entry-amount{font-weight:bold;margin-bottom:8px}
-.tablewrap{overflow-x:auto}
-table{border-collapse:collapse;width:100%;font-size:14px}
-th,td{padding:10px 8px;text-align:right;border-bottom:1px solid #e8edf3;white-space:nowrap}
-th:first-child,td:first-child{text-align:left}
-th{color:#68748a}
-tfoot{font-weight:bold}
-@media(max-width:600px){
- .cards{grid-template-columns:1fr}
- .grid2{grid-template-columns:1fr}
- .entry{align-items:flex-start}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}
+.card{position:relative;min-width:0;overflow:hidden;padding:20px;background:#fff;border:1px solid var(--border);border-top:3px solid var(--gold);border-radius:13px;box-shadow:0 4px 14px rgba(31,38,52,.035);transition:transform .18s,box-shadow .18s}
+.card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(31,38,52,.075)}
+.card small{display:block;margin-bottom:10px;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.45px;text-transform:uppercase}
+.money{font-size:clamp(18px,2vw,24px);font-weight:800;line-height:1.35;letter-spacing:-.5px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.money.income,.entry-amount.income{color:var(--blue)}
+.money.expense,.entry-amount.expense{color:var(--red)}
+.money.balance{color:var(--gold-dark)}
+.card:has(.money.income){background:linear-gradient(145deg,#fff,#f8fbff);border-top-color:var(--blue)}
+.card:has(.money.expense){background:linear-gradient(145deg,#fff,#fff9f9);border-top-color:var(--red)}
+.card:has(.money.balance){background:linear-gradient(145deg,#fff,#fcf9f1);border-top-color:var(--gold)}
+.tablewrap{width:100%;overflow-x:auto;border:1px solid var(--border);border-radius:11px}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:14px}
+th,td{padding:13px 15px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+thead th{color:#4b505a;background:#f7f3e9;font-size:12px;font-weight:800;letter-spacing:.35px;text-transform:uppercase}
+tbody tr{background:#fff;transition:background .15s}
+tbody tr:hover{background:#faf9f6}
+tbody tr:last-child td{border-bottom:0}
+tfoot th,tfoot td{background:#f8f5ed;border-top:2px solid #e6d7b5;border-bottom:0;font-weight:800}
+#entriesList{display:grid;gap:10px}
+.entry{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:15px 16px;background:#fff;border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:11px;transition:background .16s,border-color .16s,box-shadow .16s}
+.entry:hover{background:#fdfcf9;border-color:#ddcfad;box-shadow:0 4px 12px rgba(31,38,52,.045)}
+.entry>div:first-child{min-width:0;flex:1}
+.entry-desc{color:var(--text);font-size:14px;font-weight:750;overflow-wrap:anywhere}
+.entry-date{margin-top:4px;color:var(--muted);font-size:12px}
+.entry-right{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.entry-amount{font-size:15px;font-weight:800;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.icon-title{display:flex;align-items:center;gap:11px}
+.icon-box{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;flex:0 0 42px;border-radius:12px;background:var(--gold-light);color:var(--gold-dark)}
+.icon-box svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.icon-box.blue{background:var(--blue-soft);color:var(--blue)}
+.icon-box.red{background:var(--red-soft);color:var(--red)}
+.icon-box.gold{background:var(--gold-light);color:var(--gold-dark)}
+.card-label{display:flex;align-items:center;gap:10px;margin-bottom:13px}
+.card-label small{margin:0}
+.card-label .icon-box{width:36px;height:36px;flex-basis:36px;border-radius:10px}
+.card-label .icon-box svg{width:19px;height:19px}
+.action-row{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+#editPanel{border-top:4px solid var(--gold)}
+@media(min-width:850px){
+  #entryForm,#editForm{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:18px;align-items:end}
+  #entryForm button[type=submit],#editForm button[type=submit]{grid-column:1/-1}
+  #entryMessage,#editMessage{grid-column:1/-1}
+}
+@media(max-width:700px){
+  header{padding:26px 20px}
+  main{width:calc(100% - 24px);margin-top:17px}
+  .panel{padding:19px;margin-bottom:15px;border-radius:13px}
+  #loginPanel{margin-top:22px;padding:23px}
+  h2{font-size:17px}
+  .cards{grid-template-columns:1fr;gap:10px}
+  .card{padding:16px}
+  .money{font-size:21px}
+  .entry{align-items:flex-start;padding:13px;gap:10px}
+  .entry-right{flex-direction:row;align-items:center;gap:6px}
+  .entry-amount{font-size:13px}
+  .topline{align-items:flex-start}
+  #appPanel>.topline.panel{padding:16px}
+  th,td{padding:11px 12px}
+  .icon-box{width:37px;height:37px;flex-basis:37px}
+  .action-row button{flex:1}
+}
+@media(max-width:390px){
+  main{width:calc(100% - 16px)}
+  .panel{padding:15px}
+  .entry{flex-direction:column}
+  .entry-right{width:100%;flex-direction:row;justify-content:space-between;align-items:center}
+  #appPanel>.topline.panel{flex-wrap:wrap}
+  #logout{min-height:36px;padding:7px 11px}
 }
 </style>
 </head>
@@ -75,6 +148,8 @@ tfoot{font-weight:bold}
       <button class="primary" id="loginButton" type="submit">Prijavi se</button>
     </form>
     <div id="loginMessage" class="message hidden"></div>
+    <button class="secondary" id="registerButton" type="button">Napravi novi nalog</button>
+    <div id="registerMessage" class="message hidden"></div>
   </section>
 
   <section id="appPanel" class="hidden">
@@ -105,36 +180,67 @@ tfoot{font-weight:bold}
     </section>
 
     <section class="panel">
-      <h2>Dnevni pregled</h2>
+      <h2 class="icon-title">
+        <span class="icon-box gold">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="m9 15 2 2 4-4"/></svg>
+        </span>
+        Dnevni pregled
+      </h2>
       <label for="dailyDate">Izaberi datum</label>
       <input id="dailyDate" type="date">
       <div class="cards" style="margin-top:12px">
-        <div class="card"><small>Prihodi</small><div id="dayIncome" class="money income">0,00 RSD</div></div>
-        <div class="card"><small>Rashodi</small><div id="dayExpense" class="money expense">0,00 RSD</div></div>
-        <div class="card"><small>Razlika</small><div id="dayBalance" class="money balance">0,00 RSD</div></div>
+        <div class="card">
+          <div class="card-label"><span class="icon-box blue"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span><small>Prihodi</small></div>
+          <div id="dayIncome" class="money income">0,00 RSD</div>
+        </div>
+        <div class="card">
+          <div class="card-label"><span class="icon-box red"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg></span><small>Rashodi</small></div>
+          <div id="dayExpense" class="money expense">0,00 RSD</div>
+        </div>
+        <div class="card">
+          <div class="card-label"><span class="icon-box gold"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M12 8v8"/></svg></span><small>Razlika</small></div>
+          <div id="dayBalance" class="money balance">0,00 RSD</div>
+        </div>
       </div>
     </section>
 
     <section class="panel">
-      <h2>Mesečni pregled</h2>
+      <h2 class="icon-title">
+        <span class="icon-box gold">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M8 14h2M14 14h2M8 17h2M14 17h2"/></svg>
+        </span>
+        Mesečni pregled
+      </h2>
       <label for="filterMonth">Izaberi mesec</label>
       <input id="filterMonth" type="month">
       <div class="cards" style="margin-top:12px">
-        <div class="card"><small>Ukupni prihodi</small><div id="monthIncome" class="money income">0,00 RSD</div></div>
-        <div class="card"><small>Ukupni rashodi</small><div id="monthExpense" class="money expense">0,00 RSD</div></div>
-        <div class="card"><small>Preostalo</small><div id="monthBalance" class="money balance">0,00 RSD</div></div>
+        <div class="card">
+          <div class="card-label"><span class="icon-box blue"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span><small>Ukupni prihodi</small></div>
+          <div id="monthIncome" class="money income">0,00 RSD</div>
+        </div>
+        <div class="card">
+          <div class="card-label"><span class="icon-box red"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg></span><small>Ukupni rashodi</small></div>
+          <div id="monthExpense" class="money expense">0,00 RSD</div>
+        </div>
+        <div class="card">
+          <div class="card-label"><span class="icon-box gold"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M12 8v8"/></svg></span><small>Preostalo</small></div>
+          <div id="monthBalance" class="money balance">0,00 RSD</div>
+        </div>
       </div>
     </section>
 
     <section class="panel">
-      <h2>Godišnji pregled po mesecima</h2>
+      <h2 class="icon-title">
+        <span class="icon-box gold">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><rect x="6" y="12" width="3" height="6" rx="1"/><rect x="11" y="8" width="3" height="10" rx="1"/><rect x="16" y="4" width="3" height="14" rx="1"/></svg>
+        </span>
+        Godišnji pregled po mesecima
+      </h2>
       <label for="filterYear">Izaberi godinu</label>
       <select id="filterYear"></select>
       <div class="tablewrap" style="margin-top:12px">
         <table>
-          <thead>
-            <tr><th>Mesec</th><th>Prihodi</th><th>Rashodi</th><th>Razlika</th></tr>
-          </thead>
+          <thead><tr><th>Mesec</th><th>Prihodi</th><th>Rashodi</th><th>Razlika</th></tr></thead>
           <tbody id="yearRows"></tbody>
           <tfoot id="yearTotals"></tfoot>
         </table>
@@ -148,14 +254,48 @@ tfoot{font-weight:bold}
       </div>
       <div id="entriesList" style="margin-top:12px"></div>
     </section>
+
+    <section id="editPanel" class="panel hidden">
+      <h2>Uredi unos</h2>
+      <p class="muted">Izmeni podatke i sačuvaj promene.</p>
+      <form id="editForm">
+        <input id="editId" type="hidden">
+        <label for="editType">Vrsta unosa</label>
+        <select id="editType" required>
+          <option value="rashod">Rashod</option>
+          <option value="prihod">Prihod</option>
+        </select>
+        <label for="editDate">Datum</label>
+        <input id="editDate" type="date" required>
+        <label for="editDescription">Opis</label>
+        <input id="editDescription" type="text" maxlength="250" required>
+        <label for="editAmount">Iznos (RSD)</label>
+        <input id="editAmount" type="number" min="0.01" step="0.01" required>
+        <button id="updateButton" class="primary" type="submit">Sačuvaj izmene</button>
+        <button id="cancelEdit" class="secondary" type="button" style="margin-top:10px">Otkaži</button>
+        <div id="editMessage" class="message hidden"></div>
+      </form>
+    </section>
+
+    <!-- Izvoz je sada poslednja sekcija aplikacije -->
+    <section class="panel">
+      <h2 class="icon-title">
+        <span class="icon-box gold">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h4"/></svg>
+        </span>
+        Izvoz podataka u Excel
+      </h2>
+      <p class="muted">Preuzmi transakcije ili godišnji pregled kao Excel fajl.</p>
+      <div class="action-row">
+        <button id="exportEntries" class="primary" type="button">Izvezi sve transakcije</button>
+        <button id="exportYear" class="secondary" type="button">Izvezi godišnji pregled</button>
+      </div>
+      <div id="exportMessage" class="message hidden"></div>
+    </section>
   </section>
 </main>
 
 <script>
-/* POVEZIVANJE SA SUPABASE BAZOM
-   Ovde ćemo uneti Project URL i Publishable key iz podaci.txt.
-   Nikada ne unosi lozinku baze niti sb_secret_ ključ.
-*/
 const SUPABASE_URL = "https://shtndpzwllvnugcdfsrt.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2UQQ1q5cwBztU-tdE6jdww_NF_yVclK";
 
@@ -174,18 +314,14 @@ function today() {
 }
 
 const currentMonth = () => today().slice(0, 7);
-
-const monthNames = [
-  "Januar", "Februar", "Mart", "April",
-  "Maj", "Jun", "Jul", "Avgust",
-  "Septembar", "Oktobar", "Novembar", "Decembar"
-];
+const monthNames = ["Januar","Februar","Mart","April","Maj","Jun","Jul","Avgust","Septembar","Oktobar","Novembar","Decembar"];
 
 let db = null;
 let currentUser = null;
 let entries = [];
 let currentType = "rashod";
 let busy = false;
+let editing = false;
 
 function showMessage(id, text) {
   $(id).textContent = text;
@@ -201,25 +337,19 @@ function setType(type) {
   currentType = type;
   $("expenseTab").classList.toggle("active", type === "rashod");
   $("incomeTab").classList.toggle("active", type === "prihod");
-  $("descriptionLabel").textContent = type === "rashod"
-    ? "Na šta smo potrošili?"
-    : "Od čega je prihod?";
-  $("saveButton").textContent = type === "rashod"
-    ? "Sačuvaj rashod"
-    : "Sačuvaj prihod";
+  $("descriptionLabel").textContent = type === "rashod" ? "Na šta smo potrošili?" : "Od čega je prihod?";
+  $("saveButton").textContent = type === "rashod" ? "Sačuvaj rashod" : "Sačuvaj prihod";
   clearMessage("entryMessage");
 }
 
 function sum(list, type) {
-  return list
-    .filter(item => item.tip === type)
-    .reduce((total, item) => total + Number(item.iznos), 0);
+  return list.filter(item => item.tip === type).reduce((total, item) => total + Number(item.iznos), 0);
 }
 
 function totals(list) {
   const inc = sum(list, "prihod");
   const exp = sum(list, "rashod");
-  return { inc, exp, balance: inc - exp };
+  return {inc, exp, balance:inc-exp};
 }
 
 function putTotals(prefix, list) {
@@ -231,11 +361,7 @@ function putTotals(prefix, list) {
 
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, character => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
   })[character]);
 }
 
@@ -245,46 +371,27 @@ function render() {
   const year = Number($("filterYear").value) || new Date().getFullYear();
 
   putTotals("day", entries.filter(item => item.datum === day));
-  putTotals("month", entries.filter(item =>
-    item.datum && item.datum.slice(0, 7) === month
-  ));
+  putTotals("month", entries.filter(item => item.datum && item.datum.slice(0,7) === month));
 
   let annualIncome = 0;
   let annualExpense = 0;
 
   $("yearRows").innerHTML = monthNames.map((name, index) => {
-    const key = year + "-" + String(index + 1).padStart(2, "0");
-    const t = totals(entries.filter(item =>
-      item.datum && item.datum.slice(0, 7) === key
-    ));
-
+    const key = year + "-" + String(index + 1).padStart(2,"0");
+    const t = totals(entries.filter(item => item.datum && item.datum.slice(0,7) === key));
     annualIncome += t.inc;
     annualExpense += t.exp;
 
-    return `<tr>
-      <td>${name}</td>
-      <td class="income">${money(t.inc)}</td>
-      <td class="expense">${money(t.exp)}</td>
-      <td>${money(t.balance)}</td>
-    </tr>`;
+    return `<tr><td>${name}</td><td class="income">${money(t.inc)}</td><td class="expense">${money(t.exp)}</td><td>${money(t.balance)}</td></tr>`;
   }).join("");
 
-  $("yearTotals").innerHTML = `<tr>
-    <td>UKUPNO</td>
-    <td class="income">${money(annualIncome)}</td>
-    <td class="expense">${money(annualExpense)}</td>
-    <td>${money(annualIncome - annualExpense)}</td>
-  </tr>`;
+  $("yearTotals").innerHTML = `<tr><td>UKUPNO</td><td class="income">${money(annualIncome)}</td><td class="expense">${money(annualExpense)}</td><td>${money(annualIncome-annualExpense)}</td></tr>`;
 
-  const monthEntries = entries.filter(item =>
-    item.datum && item.datum.slice(0, 7) === month
-  );
-
+  const monthEntries = entries.filter(item => item.datum && item.datum.slice(0,7) === month);
   $("entryCount").textContent = monthEntries.length + " stavki";
 
   if (!monthEntries.length) {
-    $("entriesList").innerHTML =
-      '<p class="muted">Nema unosa za izabrani mesec.</p>';
+    $("entriesList").innerHTML = '<p class="muted">Nema unosa za izabrani mesec.</p>';
     return;
   }
 
@@ -292,15 +399,12 @@ function render() {
     <div class="entry">
       <div>
         <div class="entry-desc">${escapeHtml(item.opis)}</div>
-        <div class="entry-date">${escapeHtml(item.datum)} · ${
-          item.tip === "prihod" ? "Prihod" : "Rashod"
-        }</div>
+        <div class="entry-date">${escapeHtml(item.datum)} · ${item.tip === "prihod" ? "Prihod" : "Rashod"}</div>
       </div>
       <div class="entry-right">
-        <div class="entry-amount ${
-          item.tip === "prihod" ? "income" : "expense"
-        }">${item.tip === "prihod" ? "+" : "−"}${money(item.iznos)}</div>
-        <button class="danger" type="button" data-delete="${item.id}">Obriši</button>
+        <div class="entry-amount ${item.tip === "prihod" ? "income" : "expense"}">${item.tip === "prihod" ? "+" : "−"}${money(item.iznos)}</div>
+        <button class="edit" type="button" data-edit="${escapeHtml(item.id)}">Uredi</button>
+        <button class="danger" type="button" data-delete="${escapeHtml(item.id)}">Obriši</button>
       </div>
     </div>
   `).join("");
@@ -309,15 +413,14 @@ function render() {
 async function loadEntries() {
   if (!db || !currentUser) return;
 
-  const { data, error } = await db
-    .from("transakcije")
+  const {data,error} = await db.from("transakcije")
     .select("id,user_id,tip,datum,opis,iznos")
-    .order("datum", { ascending: false })
-    .order("id", { ascending: false })
+    .order("datum",{ascending:false})
+    .order("id",{ascending:false})
     .limit(5000);
 
   if (error) {
-    showMessage("entryMessage", "Učitavanje nije uspelo: " + error.message);
+    showMessage("entryMessage","Učitavanje nije uspelo: " + error.message);
     return;
   }
 
@@ -336,8 +439,34 @@ function showApp(user) {
 function showLogin() {
   currentUser = null;
   entries = [];
+  closeEdit();
   $("appPanel").classList.add("hidden");
   $("loginPanel").classList.remove("hidden");
+}
+
+function openEdit(id) {
+  const item = entries.find(entry => String(entry.id) === String(id));
+  if (!item) {
+    alert("Unos nije pronađen.");
+    return;
+  }
+
+  editing = true;
+  $("editId").value = item.id;
+  $("editType").value = item.tip;
+  $("editDate").value = item.datum;
+  $("editDescription").value = item.opis || "";
+  $("editAmount").value = item.iznos;
+  clearMessage("editMessage");
+  $("editPanel").classList.remove("hidden");
+  $("editPanel").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function closeEdit() {
+  editing = false;
+  if ($("editPanel")) $("editPanel").classList.add("hidden");
+  if ($("editForm")) $("editForm").reset();
+  if ($("editMessage")) clearMessage("editMessage");
 }
 
 $("loginForm").addEventListener("submit", async event => {
@@ -345,36 +474,40 @@ $("loginForm").addEventListener("submit", async event => {
   clearMessage("loginMessage");
 
   if (!db) {
-    showMessage("loginMessage",
-      "Povezivanje nije podešeno. Proveri Project URL i Publishable key.");
+    showMessage("loginMessage","Povezivanje nije podešeno. Proveri Project URL i Publishable key.");
     return;
   }
 
   $("loginButton").disabled = true;
-  const { data, error } = await db.auth.signInWithPassword({
-    email: $("email").value.trim(),
-    password: $("password").value
-  });
-  $("loginButton").disabled = false;
 
-  if (error) {
-    showMessage("loginMessage", "Prijava nije uspela: " + error.message);
-    return;
+  try {
+    const {data,error} = await db.auth.signInWithPassword({
+      email:$("email").value.trim(),
+      password:$("password").value
+    });
+
+    if (error) {
+      showMessage("loginMessage","Prijava nije uspela: " + error.message);
+      return;
+    }
+
+    $("password").value = "";
+    showApp(data.user);
+  } catch (error) {
+    showMessage("loginMessage","Greška pri prijavi: " + error.message);
+  } finally {
+    $("loginButton").disabled = false;
   }
-
-  $("password").value = "";
-  showApp(data.user);
 });
 
 $("logout").addEventListener("click", async () => {
   if (!db) return;
-  const { error } = await db.auth.signOut();
+  const {error} = await db.auth.signOut();
 
   if (error) {
     alert("Odjava nije uspela: " + error.message);
     return;
   }
-
   showLogin();
 });
 
@@ -395,7 +528,7 @@ $("entryForm").addEventListener("submit", async event => {
   const iznos = Number($("amount").value);
 
   if (!datum || !opis || !Number.isFinite(iznos) || iznos <= 0) {
-    showMessage("entryMessage", "Proveri datum, opis i iznos.");
+    showMessage("entryMessage","Proveri datum, opis i iznos.");
     return;
   }
 
@@ -403,51 +536,239 @@ $("entryForm").addEventListener("submit", async event => {
   $("saveButton").disabled = true;
   $("saveButton").textContent = "Čuvam...";
 
-  const { error } = await db.from("transakcije").insert({
-    user_id: currentUser.id,
-    tip: currentType,
-    datum: datum,
-    opis: opis,
-    iznos: iznos
-  });
+  try {
+    const {error} = await db.from("transakcije").insert({
+      user_id:currentUser.id,
+      tip:currentType,
+      datum,
+      opis,
+      iznos
+    });
 
-  busy = false;
-  $("saveButton").disabled = false;
-  $("saveButton").textContent = currentType === "rashod"
-    ? "Sačuvaj rashod"
-    : "Sačuvaj prihod";
+    if (error) {
+      showMessage("entryMessage","Čuvanje nije uspelo: " + error.message);
+      return;
+    }
 
-  if (error) {
-    showMessage("entryMessage", "Čuvanje nije uspelo: " + error.message);
-    return;
+    $("description").value = "";
+    $("amount").value = "";
+    $("filterMonth").value = datum.slice(0,7);
+    $("dailyDate").value = datum;
+    $("filterYear").value = datum.slice(0,4);
+    showMessage("entryMessage","Unos je sačuvan u bazi.");
+    await loadEntries();
+  } catch (error) {
+    showMessage("entryMessage","Greška pri čuvanju: " + error.message);
+  } finally {
+    busy = false;
+    $("saveButton").disabled = false;
+    $("saveButton").textContent = currentType === "rashod" ? "Sačuvaj rashod" : "Sačuvaj prihod";
   }
-
-  $("description").value = "";
-  $("amount").value = "";
-  $("filterMonth").value = datum.slice(0, 7);
-  $("dailyDate").value = datum;
-  showMessage("entryMessage", "Unos je sačuvan u bazi.");
-  await loadEntries();
 });
 
 $("entriesList").addEventListener("click", async event => {
+  const editButton = event.target.closest("[data-edit]");
+  if (editButton) {
+    openEdit(editButton.dataset.edit);
+    return;
+  }
+
   const button = event.target.closest("[data-delete]");
   if (!button || !db || !currentUser) return;
 
   if (!confirm("Da li sigurno želiš da obrišeš ovaj unos?")) return;
 
-  const { error } = await db
-    .from("transakcije")
+  button.disabled = true;
+
+  const {error} = await db.from("transakcije")
     .delete()
-    .eq("id", button.dataset.delete)
-    .eq("user_id", currentUser.id);
+    .eq("id",button.dataset.delete)
+    .eq("user_id",currentUser.id);
 
   if (error) {
     alert("Brisanje nije uspelo: " + error.message);
+    button.disabled = false;
     return;
   }
 
   await loadEntries();
+});
+
+$("editForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  clearMessage("editMessage");
+
+  if (!editing || busy || !db || !currentUser) return;
+
+  const id = $("editId").value;
+  const tip = $("editType").value;
+  const datum = $("editDate").value;
+  const opis = $("editDescription").value.trim();
+  const iznos = Number($("editAmount").value);
+
+  if (!id || !datum || !opis || !Number.isFinite(iznos) || iznos <= 0) {
+    showMessage("editMessage","Proveri vrstu unosa, datum, opis i iznos.");
+    return;
+  }
+
+  busy = true;
+  $("updateButton").disabled = true;
+  $("updateButton").textContent = "Čuvam izmene...";
+
+  try {
+    const {data,error} = await db.from("transakcije")
+      .update({tip,datum,opis,iznos})
+      .eq("id",id)
+      .eq("user_id",currentUser.id)
+      .select("id");
+
+    if (error) {
+      showMessage("editMessage","Izmena nije uspela: " + error.message);
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      showMessage("editMessage","Unos nije izmenjen. Proveri prava pristupa u bazi.");
+      return;
+    }
+
+    $("filterMonth").value = datum.slice(0,7);
+    $("dailyDate").value = datum;
+    $("filterYear").value = datum.slice(0,4);
+
+    closeEdit();
+    await loadEntries();
+    showMessage("entryMessage","Unos je uspešno izmenjen.");
+    $("entryMessage").scrollIntoView({behavior:"smooth",block:"center"});
+  } catch (error) {
+    showMessage("editMessage","Greška pri izmeni: " + error.message);
+  } finally {
+    busy = false;
+    $("updateButton").disabled = false;
+    $("updateButton").textContent = "Sačuvaj izmene";
+  }
+});
+
+$("cancelEdit").addEventListener("click", closeEdit);
+
+function ensureExcel() {
+  if (typeof XLSX === "undefined") {
+    showMessage("exportMessage","Excel biblioteka nije učitana. Proveri internet vezu i pokušaj ponovo.");
+    return false;
+  }
+  clearMessage("exportMessage");
+  return true;
+}
+
+function exportEntriesExcel() {
+  if (!ensureExcel()) return;
+  if (!entries.length) {
+    showMessage("exportMessage","Nema transakcija za izvoz.");
+    return;
+  }
+
+  const rows = [...entries]
+    .sort((a,b) => String(a.datum).localeCompare(String(b.datum)))
+    .map(item => ({
+      "Datum": item.datum,
+      "Vrsta": item.tip === "prihod" ? "Prihod" : "Rashod",
+      "Opis": item.opis,
+      "Iznos (RSD)": Number(item.iznos)
+    }));
+
+  const sheet = XLSX.utils.json_to_sheet(rows);
+  sheet["!cols"] = [{wch:14},{wch:14},{wch:38},{wch:18}];
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook,sheet,"Transakcije");
+  XLSX.writeFile(workbook,"kucni-budzet-transakcije.xlsx");
+  showMessage("exportMessage","Excel fajl sa transakcijama je pripremljen.");
+}
+
+function exportYearExcel() {
+  if (!ensureExcel()) return;
+
+  const year = Number($("filterYear").value) || new Date().getFullYear();
+  let annualIncome = 0;
+  let annualExpense = 0;
+
+  const rows = monthNames.map((name,index) => {
+    const key = year + "-" + String(index + 1).padStart(2,"0");
+    const monthEntries = entries.filter(item => item.datum && item.datum.slice(0,7) === key);
+    const t = totals(monthEntries);
+    annualIncome += t.inc;
+    annualExpense += t.exp;
+
+    return {
+      "Mesec": name,
+      "Prihodi (RSD)": Number(t.inc.toFixed(2)),
+      "Rashodi (RSD)": Number(t.exp.toFixed(2)),
+      "Razlika (RSD)": Number(t.balance.toFixed(2))
+    };
+  });
+
+  rows.push({
+    "Mesec": "UKUPNO",
+    "Prihodi (RSD)": Number(annualIncome.toFixed(2)),
+    "Rashodi (RSD)": Number(annualExpense.toFixed(2)),
+    "Razlika (RSD)": Number((annualIncome-annualExpense).toFixed(2))
+  });
+
+  const sheet = XLSX.utils.json_to_sheet(rows);
+  sheet["!cols"] = [{wch:18},{wch:20},{wch:20},{wch:20}];
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook,sheet,"Godišnji pregled");
+  XLSX.writeFile(workbook,"kucni-budzet-" + year + ".xlsx");
+  showMessage("exportMessage","Godišnji Excel pregled za " + year + " je pripremljen.");
+}
+
+$("exportEntries").addEventListener("click",exportEntriesExcel);
+$("exportYear").addEventListener("click",exportYearExcel);
+
+$("registerButton").addEventListener("click", async () => {
+  clearMessage("loginMessage");
+  clearMessage("registerMessage");
+
+  if (!db) {
+    showMessage("registerMessage","Povezivanje sa bazom nije podešeno.");
+    return;
+  }
+
+  const email = $("email").value.trim();
+  const password = $("password").value;
+
+  if (!email || !password) {
+    showMessage("registerMessage","Prvo unesi e-mail i lozinku u polja iznad.");
+    return;
+  }
+
+  if (password.length < 6) {
+    showMessage("registerMessage","Lozinka mora imati najmanje 6 znakova.");
+    return;
+  }
+
+  $("registerButton").disabled = true;
+
+  try {
+    const {data,error} = await db.auth.signUp({email,password});
+
+    if (error) {
+      showMessage("registerMessage","Registracija nije uspela: " + error.message);
+      return;
+    }
+
+    if (data.session && data.user) {
+      showMessage("registerMessage","Nalog je napravljen. Možeš da koristiš aplikaciju.");
+      showApp(data.user);
+    } else {
+      showMessage("registerMessage","Proveri e-mail za potvrdu registracije.");
+    }
+  } catch (error) {
+    showMessage("registerMessage","Greška pri registraciji: " + error.message);
+  } finally {
+    $("registerButton").disabled = false;
+  }
 });
 
 function start() {
@@ -467,26 +788,27 @@ function start() {
 
   if (
     SUPABASE_URL.startsWith("https://") &&
-    !SUPABASE_URL.includes("OVDE_UNESI") &&
     SUPABASE_PUBLISHABLE_KEY.startsWith("sb_publishable_") &&
     window.supabase
   ) {
-    db = window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_PUBLISHABLE_KEY
-    );
+    db = window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 
-    db.auth.getSession().then(({ data, error }) => {
+    db.auth.getSession().then(({data,error}) => {
       if (error) {
-        showMessage("loginMessage", "Greška: " + error.message);
+        showMessage("loginMessage","Greška: " + error.message);
         return;
       }
       if (data.session) showApp(data.session.user);
+    }).catch(error => {
+      showMessage("loginMessage","Greška pri povezivanju: " + error.message);
     });
 
-    db.auth.onAuthStateChange((event, session) => {
+    db.auth.onAuthStateChange((event,session) => {
       if (event === "SIGNED_OUT") showLogin();
+      else if (event === "SIGNED_IN" && session) showApp(session.user);
     });
+  } else {
+    showMessage("loginMessage","Nije moguće povezivanje sa bazom. Proveri podešavanja.");
   }
 }
 
